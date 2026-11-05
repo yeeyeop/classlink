@@ -131,9 +131,15 @@ test('conflict detection ignores cancelled bookings and the edited booking itsel
       status: 'confirmed',
     },
   ]
-  assert.equal(validateBooking(candidate, existing).status, 409)
   assert.equal(
-    validateBooking(candidate, existing, { ignoredBookingId: 'booking-1' })
+    validateBooking(candidate, existing, { now: FIXED_NOW }).status,
+    409,
+  )
+  assert.equal(
+    validateBooking(candidate, existing, {
+      now: FIXED_NOW,
+      ignoredBookingId: 'booking-1',
+    })
       .error,
     undefined,
   )

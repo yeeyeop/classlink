@@ -7,6 +7,17 @@ import {
   generateAdminAssistantReply,
 } from '../lib/admin-assistant.js'
 
+function dateFromToday(offsetDays) {
+  const date = new Date()
+  date.setDate(date.getDate() + offsetDays)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+const TEST_DATE = dateFromToday(1)
+
 const db = {
   users: [
     {
@@ -20,7 +31,7 @@ const db = {
       id: 'booking-1',
       userId: 'student-1',
       roomId: 'a2-205',
-      date: '2026-09-11',
+      date: TEST_DATE,
       segment: 2,
       duration: 1,
       purpose: '小组讨论',
@@ -38,7 +49,7 @@ const db = {
 }
 
 test('builds admin assistant context with live booking and device data', () => {
-  const context = buildAdminAssistantContext(db, '2026-09-11', 2)
+  const context = buildAdminAssistantContext(db, TEST_DATE, 2)
   const room = context.rooms.find((item) => item.roomId === 'a2-205')
   assert.equal(room.status, 'reserved')
   assert.equal(room.booking.userName, '测试学生')
@@ -47,7 +58,7 @@ test('builds admin assistant context with live booking and device data', () => {
 })
 
 test('local assistant answers room-specific questions from the context', async () => {
-  const context = buildAdminAssistantContext(db, '2026-09-11', 2)
+  const context = buildAdminAssistantContext(db, TEST_DATE, 2)
   const result = await generateAdminAssistantReply({
     messages: [{ role: 'user', content: '查看 205 教室现在的情况' }],
     context,
@@ -59,7 +70,7 @@ test('local assistant answers room-specific questions from the context', async (
 })
 
 test('local assistant summarizes free rooms without inventing data', async () => {
-  const context = buildAdminAssistantContext(db, '2026-09-11', 2)
+  const context = buildAdminAssistantContext(db, TEST_DATE, 2)
   const result = await generateAdminAssistantReply({
     messages: [{ role: 'user', content: '还有哪些空闲教室？' }],
     context,
@@ -69,7 +80,7 @@ test('local assistant summarizes free rooms without inventing data', async () =>
 })
 
 test('classroom agent tools filter live room data', () => {
-  const context = buildAdminAssistantContext(db, '2026-09-11', 2)
+  const context = buildAdminAssistantContext(db, TEST_DATE, 2)
   const room = executeAdminAssistantTool(
     'get_room',
     { room: '205' },
@@ -119,13 +130,13 @@ test('agent prepares booking and cancellation without writing data', () => {
       ...db,
       users: [...db.users, { id: 'admin-1', name: '管理员', sid: '2026000001', role: 'admin' }],
     },
-    '2026-09-11',
+    TEST_DATE,
     2,
     { id: 'admin-1', name: '管理员', sid: '2026000001', role: 'admin' },
   )
   const bookingAction = executeAdminAssistantTool(
     'prepare_booking',
-    { room: '208', date: '2026-09-11', segment: 2, duration: 1, people: 1 },
+    { room: '208', date: TEST_DATE, segment: 2, duration: 1, people: 1 },
     context,
   ).action
   assert.equal(bookingAction.type, 'book')
@@ -134,7 +145,7 @@ test('agent prepares booking and cancellation without writing data', () => {
 
   const cancelAction = executeAdminAssistantTool(
     'prepare_cancel_booking',
-    { room: '205', date: '2026-09-11', segment: 2 },
+    { room: '205', date: TEST_DATE, segment: 2 },
     context,
   ).action
   assert.equal(cancelAction.type, 'cancel')
